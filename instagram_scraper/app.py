@@ -206,7 +206,7 @@ class InstagramScraper(object):
                 self.extract_tags(node)
         return nodes
 
-    def scrape_query(self, media_generator, executor=concurrent.futures.ThreadPoolExecutor(max_workers=10)):
+    def __scrape_query(self, media_generator, executor=concurrent.futures.ThreadPoolExecutor(max_workers=10)):
         """Scrapes the specified value for posted media."""
         for value in self.usernames:
             self.posts = []
@@ -230,17 +230,24 @@ class InstagramScraper(object):
                 iter = iter + 1
                 if self.maximum != 0 and iter >= self.maximum:
                     break
+            
+            if future_to_item:
+                for future in tqdm.tqdm(concurrent.futures.as_completed(future_to_item), total=len(future_to_item),
+                                        desc='Downloading', disable=self.quiet):
+                    item = future_to_item[future]
 
-            for future in tqdm.tqdm(concurrent.futures.as_completed(future_to_item), total=len(future_to_item),
-                                    desc='Downloading', disable=self.quiet):
-                item = future_to_item[future]
-
-                if future.exception() is not None:
-                    self.logger.warning(
-                        'Media for {0} at {1} generated an exception: {2}'.format(value, item['urls'], future.exception()))
+                    if future.exception() is not None:
+                        self.logger.warning(
+                            'Media for {0} at {1} generated an exception: {2}'.format(value, item['urls'], future.exception()))
 
             if self.media_metadata and self.posts:
                 self.save_json(self.posts, '{0}/{1}.json'.format(dst, value))
+
+    def scrape_hashtag(self):
+        self.__scrape_query(self.media_gen_hashtag)
+
+    def scrape_location(self):
+        self.__scrape_query(self.media_gen_location)
 
     def scrape(self, executor=concurrent.futures.ThreadPoolExecutor(max_workers=10)):
         """Crawls through and downloads user's media"""
@@ -266,13 +273,14 @@ class InstagramScraper(object):
 
             # Displays the progress bar of completed downloads. Might not even pop up if all media is downloaded while
             # the above loop finishes.
-            for future in tqdm.tqdm(concurrent.futures.as_completed(future_to_item), total=len(future_to_item),
-                                    desc='Downloading', disable=self.quiet):
-                item = future_to_item[future]
+            if future_to_item:
+                for future in tqdm.tqdm(concurrent.futures.as_completed(future_to_item), total=len(future_to_item),
+                                        desc='Downloading', disable=self.quiet):
+                    item = future_to_item[future]
 
-                if future.exception() is not None:
-                    self.logger.warning(
-                        'Media at {0} generated an exception: {1}'.format(item['urls'], future.exception()))
+                    if future.exception() is not None:
+                        self.logger.warning(
+                            'Media at {0} generated an exception: {1}'.format(item['urls'], future.exception()))
 
             if self.media_metadata and self.posts:
                 self.save_json(self.posts, '{0}/{1}.json'.format(dst, username))
@@ -436,7 +444,12 @@ class InstagramScraper(object):
 
     def set_story_url(self, item):
         """Sets the story url."""
-        item['urls'] = [item['image_versions2']['candidates'][0]['url'].split('?')[0]]
+        urls = []
+        if 'video_versions' in item:
+            urls.append(item['video_versions'][0]['url'].split('?')[0])
+        if 'image_versions2' in item:
+            urls.append(self.get_original_image(item['image_versions2']['candidates'][0]['url'].split('?')[0]))
+        item['urls'] = urls
         return item
 
     def download(self, item, save_dir='./'):
@@ -563,9 +576,9 @@ def main():
     scraper = InstagramScraper(**vars(args))
 
     if args.tag:
-        scraper.scrape_query(scraper.media_gen_hashtag)
+        scraper.scrape_hashtag()
     elif args.location:
-        scraper.scrape_query(scraper.media_gen_location)
+        scraper.scrape_location()
     else:
         scraper.scrape()
 

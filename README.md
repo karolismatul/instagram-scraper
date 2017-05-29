@@ -1,10 +1,12 @@
-<img src="http://i.imgur.com/iH2jdhV.png" align="right" />
+<img src="https://camo.githubusercontent.com/9ac4a1f7f5ea0f573451b5ddc06e29c8aa113a85/68747470733a2f2f692e696d6775722e636f6d2f6948326a6468562e706e67" align="right">
 
 Instagram Scraper
 =================
 [![PyPI](https://img.shields.io/pypi/v/instagram-scraper.svg)](https://pypi.python.org/pypi/instagram-scraper) [![Build Status](https://travis-ci.org/rarcega/instagram-scraper.svg?branch=master)](https://travis-ci.org/rarcega/instagram-scraper)
 
 instagram-scraper is a command-line application written in Python that scrapes and downloads an instagram user's photos and videos. Use responsibly.
+
+<img src="https://cloud.githubusercontent.com/assets/140931/26286476/8232e15e-3e34-11e7-9e1c-9ecda92950e1.gif">
 
 Install
 -------
@@ -81,7 +83,8 @@ OPTIONS
                       set.
 
 --media_types -t    Specify media types to scrape. Enter as space separated values. 
-                    Valid values are image, video, and story.
+                    Valid values are image, video, story, or none. Stories require
+                    a --login_user and --login_pass to be defined.
 
 --latest            Scrape only new media since the last scrape. Uses the last modified
                     time of the latest media item in the destination directory to compare.
@@ -91,9 +94,11 @@ OPTIONS
 --maximum     -m    Maximum number of items to scrape.
 
 --media_metadata    Saves the media metadata associated with the user's posts to 
-                    <destination>/<username>.json.
+                    <destination>/<username>.json. Can be combined with --media_types none
+                    to only fetch the metadata without downloading the media.
 
 --tag               Scrapes the specified hashtag for media.
+
 --location          Scrapes the specified location for media.
 
 ```
